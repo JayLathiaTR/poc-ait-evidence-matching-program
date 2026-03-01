@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20.17.0
+          node-version: 20.19.0
           registry-url: https://tr1.jfrog.io/tr1/api/npm/npm/
           always-auth: true
           cache: npm
