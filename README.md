@@ -8,5 +8,12 @@ Goal: showcase how auditors can map sample rows to supporting documents and crea
 - Zero-AI / no Document Intelligence (manual evidence selection)
 - Runs fully client-side (static site)
 
+## Dev
+- App source lives in `web/`
+- Run locally: `cd web` then `npm ci` then `npm start`
+
+## Deploy
+GitHub Pages deploys from `master` via `.github/workflows/deploy-pages.yml`.
+
 ## Status
-Scaffolding in progress.
+Angular scaffold complete; UI implementation next.
