@@ -16,5 +16,11 @@ Goal: showcase how auditors can map sample rows to supporting documents and crea
 ## Deploy
 GitHub Pages deploys from `master` via `.github/workflows/deploy-pages.yml`.
 
+### Required secret (corporate registry)
+The Angular app dependencies install from the corporate JFrog npm registry.
+
+- Add GitHub repo secret: `JFROG_NPM_TOKEN`
+- Value: an npm auth token that has read access to `https://tr1.jfrog.io/tr1/api/npm/npm/`
+
 ## Status
 Angular scaffold complete; UI implementation next.
