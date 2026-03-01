@@ -1,0 +1,10 @@
+{
+  "name": "poc-ait-evidence-matching-program-root",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix web start",
+    "build": "npm --prefix web run build",
+    "test": "npm --prefix web test",
+    "ci": "npm --prefix web ci"
+  }
+}

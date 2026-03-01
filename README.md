@@ -10,7 +10,8 @@ Goal: showcase how auditors can map sample rows to supporting documents and crea
 
 ## Dev
 - App source lives in `web/`
-- Run locally: `cd web` then `npm ci` then `npm start`
+- Run locally (recommended): `npm start`
+- Or: `cd web` then `npm ci` then `npm start`
 
 ## Deploy
 GitHub Pages deploys from `master` via `.github/workflows/deploy-pages.yml`.
