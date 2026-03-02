@@ -13,6 +13,24 @@ Goal: showcase how auditors can map sample rows to supporting documents and crea
 - Run locally (recommended): `npm start`
 - Or: `cd web` then `npm ci` then `npm start`
 
+## Run GitHub Pages + Local API (Developer)
+Use this mode when frontend is hosted on GitHub Pages but OCR/API runs on your machine.
+
+1. Start local API server:
+	- `cd server`
+	- `npm ci`
+	- `npm start`
+2. Verify API health:
+	- `http://localhost:3001/health`
+3. Keep runtime config set to localhost:
+	- `web/public/runtime-config.js`
+	- `apiBaseUrl: 'http://localhost:3001'`
+4. Open the GitHub Pages app URL.
+
+Notes:
+- Backend must remain running while using the app.
+- This mode works for the same machine/browser where the backend is running.
+
 ## API Configuration
 Frontend API base URL is runtime-configurable via:
 
@@ -40,6 +58,3 @@ The Angular app dependencies install from the corporate JFrog npm registry.
 
 - Add GitHub repo secret: `JFROG_NPM_TOKEN`
 - Value: an npm auth token that has read access to `https://tr1.jfrog.io/tr1/api/npm/npm/`
-
-## Status
-Angular scaffold complete; UI implementation next.
