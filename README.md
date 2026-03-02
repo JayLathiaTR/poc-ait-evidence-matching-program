@@ -6,12 +6,31 @@ Goal: showcase how auditors can map sample rows to supporting documents and crea
 
 ## Scope (MVP)
 - Zero-AI / no Document Intelligence (manual evidence selection)
-- Runs fully client-side (static site)
+- Static frontend + OCR API backend
 
 ## Dev
 - App source lives in `web/`
 - Run locally (recommended): `npm start`
 - Or: `cd web` then `npm ci` then `npm start`
+
+## API Configuration
+Frontend API base URL is runtime-configurable via:
+
+- `web/public/runtime-config.js`
+
+Default:
+
+- `apiBaseUrl: 'http://localhost:3001'`
+
+This works for GitHub Pages demos when the backend is running locally.
+
+### Switch to hosted backend later
+When a hosted backend URL is available, change only this value:
+
+- from: `http://localhost:3001`
+- to: `https://<your-hosted-api-domain>`
+
+Then redeploy GitHub Pages (push to `master` or run workflow manually).
 
 ## Deploy
 GitHub Pages deploys from `master` via `.github/workflows/deploy-pages.yml`.

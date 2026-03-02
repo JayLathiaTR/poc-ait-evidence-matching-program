@@ -1,0 +1,522 @@
+<div class="page">
+  <header class="header">
+    <div class="header__title">AIT Evidence Matching</div>
+    <div class="header__subtitle">Import samples, select verification outputs, and generate evidence-backed results</div>
+  </header>
+
+  <div class="layout">
+    <section class="panel panel--left" aria-label="Sample table">
+      <div class="panel__head">
+        <div class="panel__title">Sample Transactions</div>
+        <div class="panel__subtitle">Import from CSV or Excel</div>
+      </div>
+
+      <div class="sample-upload">
+        <div class="sample-upload__top">
+          <label class="uploader__label" for="sampleUpload">Import sample file</label>
+          <button
+            type="button"
+            class="action action--ghost"
+            (click)="downloadSampleTemplate()"
+          >
+            Download Sample Template
+          </button>
+        </div>
+        <input
+          id="sampleUpload"
+          type="file"
+          accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+          (change)="onSampleFileSelected($event)"
+        />
+        <div class="hint">System first tries exact header matching, then auto-maps remaining columns. You can adjust from the dropdown before import.</div>
+      </div>
+
+      @if (hasPendingSampleMapping) {
+        <div class="sample-mapping">
+          <div class="sample-mapping__title">Map columns to workflow fields</div>
+          <div class="sample-mapping__meta">File: {{ pendingSampleFilename }} · Rows detected: {{ pendingSampleRows.length }}</div>
+
+          <div class="sample-mapping__grid">
+            @for (field of sampleFieldOptions; track field.key) {
+              <label class="sample-mapping__field">
+                <span class="sample-mapping__label">
+                  {{ field.label }}
+                  @if (field.key === 'documentId') {
+                    *
+                  }
+                </span>
+                <select
+                  class="sample-mapping__select"
+                  (change)="setSampleColumnMapping(field.key, $any($event.target).value)"
+                >
+                  @if (field.key === 'documentId') {
+                    <option value="-1" [selected]="sampleColumnMapping[field.key] === '-1'">Select required column</option>
+                  } @else {
+                    <option value="-1" [selected]="sampleColumnMapping[field.key] === '-1'">Not provided</option>
+                  }
+                  @for (header of pendingSampleHeaders; track $index) {
+                    <option [value]="getSampleHeaderIndexValue($index)" [selected]="isSampleHeaderSelected(field.key, $index)">{{ header }}</option>
+                  }
+                </select>
+              </label>
+            }
+          </div>
+
+          <div class="actions">
+            <button
+              type="button"
+              class="action action--primary"
+              [disabled]="!canApplySampleImport"
+              (click)="applySampleImport()"
+            >
+              Import Sample Data
+            </button>
+
+            <button
+              type="button"
+              class="action"
+              (click)="clearPendingSampleImport()"
+            >
+              Cancel
+            </button>
+          </div>
+          <div class="hint">Document ID is required. Other fields are optional.</div>
+        </div>
+      }
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              @if (isSampleFieldVisible('documentId')) {
+                <th>Document ID</th>
+              }
+              @if (isSampleFieldVisible('customerName')) {
+                <th>Customer name</th>
+              }
+              @if (isSampleFieldVisible('transactionDate')) {
+                <th>Transaction date</th>
+              }
+              @if (isSampleFieldVisible('originalTransactionAmount')) {
+                <th>Original transaction amount</th>
+              }
+              @if (isOutputFieldSelected('verifiedDocumentId')) {
+                <th>Verified Document ID</th>
+              }
+              @if (isOutputFieldSelected('verifiedCustomerName')) {
+                <th>Verified Customer name</th>
+              }
+              @if (isOutputFieldSelected('verifiedAmount')) {
+                <th>Verified Amount</th>
+              }
+              @if (isOutputFieldSelected('verifiedDocumentDate')) {
+                <th>Verified Document date</th>
+              }
+              @if (isOutputFieldSelected('verifiedShippingDate')) {
+                <th>Verified Shipping date</th>
+              }
+              @if (isOutputFieldSelected('verifiedShippingAddress')) {
+                <th>Verified Shipping address</th>
+              }
+              @if (showShippingSourceColumn) {
+                <th>Shipping Source</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of sampleRows; track row.transactionId) {
+              <tr
+                class="row"
+                [class.row--selected]="row.transactionId === selectedTransactionId"
+                [class.row--missing-doc-id]="isRowMissingDocumentId(row)"
+                (click)="selectSampleRow(row.transactionId)"
+              >
+                @if (isSampleFieldVisible('documentId')) {
+                  <td class="mono">{{ row.documentId }}</td>
+                }
+                @if (isSampleFieldVisible('customerName')) {
+                  <td>{{ row.customerName }}</td>
+                }
+                @if (isSampleFieldVisible('transactionDate')) {
+                  <td class="mono">{{ row.transactionDate }}</td>
+                }
+                @if (isSampleFieldVisible('originalTransactionAmount')) {
+                  <td class="mono">{{ row.originalTransactionAmount.toFixed(2) }}</td>
+                }
+                @if (isOutputFieldSelected('verifiedDocumentId')) {
+                  <td class="verified" [class.cell--match]="isDocumentIdMatch(row)" [class.cell--error]="isMissingDocumentIdStatus(row)">
+                    @if (row.verifiedDocumentId) {
+                      @if (isMissingDocumentIdStatus(row)) {
+                        {{ row.verifiedDocumentId }}
+                      } @else if (hasAnnotation(row, 'verifiedDocumentId')) {
+                        <button
+                          type="button"
+                          class="linklike"
+                          (click)="$event.stopPropagation(); openFieldEvidence(row, 'verifiedDocumentId')"
+                          title="Open evidence highlight"
+                        >
+                          {{ row.verifiedDocumentId }}
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="linklike"
+                          (click)="$event.stopPropagation(); openLinkedEvidence(row)"
+                          title="Open linked evidence"
+                        >
+                          {{ row.verifiedDocumentId }}
+                        </button>
+                      }
+                    } @else {
+                      {{ '' }}
+                    }
+                  </td>
+                }
+
+                @if (isOutputFieldSelected('verifiedCustomerName')) {
+                  <td class="verified" [class.cell--match]="isCustomerNameMatch(row)">
+                    @if (row.verifiedCustomerName && canOpenFieldEvidence(row, 'verifiedCustomerName')) {
+                      <button
+                        type="button"
+                        class="linklike"
+                        (click)="$event.stopPropagation(); openFieldEvidence(row, 'verifiedCustomerName')"
+                        title="Open supporting evidence"
+                      >
+                        {{ row.verifiedCustomerName || '' }}
+                      </button>
+                    } @else {
+                      {{ row.verifiedCustomerName || '' }}
+                    }
+                  </td>
+                }
+
+                @if (isOutputFieldSelected('verifiedAmount')) {
+                  <td class="verified mono" [class.cell--match]="isAmountMatch(row)">
+                    @if (row.verifiedAmount !== null && row.verifiedAmount !== undefined && canOpenFieldEvidence(row, 'verifiedAmount')) {
+                      <button
+                        type="button"
+                        class="linklike"
+                        (click)="$event.stopPropagation(); openFieldEvidence(row, 'verifiedAmount')"
+                        title="Open supporting evidence"
+                      >
+                        {{ row.verifiedAmount }}
+                      </button>
+                    } @else {
+                      {{ row.verifiedAmount ?? '' }}
+                    }
+                  </td>
+                }
+
+                @if (isOutputFieldSelected('verifiedDocumentDate')) {
+                  <td class="verified mono" [class.cell--match]="isDocumentDateMatch(row)">
+                    @if (row.verifiedDocumentDate && canOpenFieldEvidence(row, 'verifiedDocumentDate')) {
+                      <button
+                        type="button"
+                        class="linklike"
+                        (click)="$event.stopPropagation(); openFieldEvidence(row, 'verifiedDocumentDate')"
+                        title="Open supporting evidence"
+                      >
+                        {{ row.verifiedDocumentDate || '' }}
+                      </button>
+                    } @else {
+                      {{ row.verifiedDocumentDate || '' }}
+                    }
+                  </td>
+                }
+
+                @if (isOutputFieldSelected('verifiedShippingDate')) {
+                  <td class="verified mono">
+                    @if (row.verifiedShippingDate && canOpenFieldEvidence(row, 'verifiedShippingDate')) {
+                      <button
+                        type="button"
+                        class="linklike"
+                        (click)="$event.stopPropagation(); openFieldEvidence(row, 'verifiedShippingDate')"
+                        title="Open supporting evidence"
+                      >
+                        {{ row.verifiedShippingDate || '' }}
+                      </button>
+                    } @else {
+                      {{ row.verifiedShippingDate || '' }}
+                    }
+                  </td>
+                }
+
+                @if (isOutputFieldSelected('verifiedShippingAddress')) {
+                  <td class="verified">
+                    @if (row.verifiedShippingAddress && canOpenFieldEvidence(row, 'verifiedShippingAddress')) {
+                      <button
+                        type="button"
+                        class="linklike"
+                        (click)="$event.stopPropagation(); openFieldEvidence(row, 'verifiedShippingAddress')"
+                        title="Open supporting evidence"
+                      >
+                        {{ row.verifiedShippingAddress || '' }}
+                      </button>
+                    } @else {
+                      {{ row.verifiedShippingAddress || '' }}
+                    }
+                  </td>
+                }
+
+                @if (showShippingSourceColumn) {
+                  <td class="verified">
+                    @if (row.shippingSourceType) {
+                      <span class="source-badge">{{ row.shippingSourceType }}</span>
+                    } @else {
+                      {{ '' }}
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel panel--right" aria-label="Evidence documents">
+      <div class="panel__head">
+        <div class="panel__title">Evidence Workflow</div>
+        <div class="panel__subtitle">Three-step verification flow</div>
+      </div>
+
+      <div class="workflow">
+        <div class="step-card">
+          <div class="step-card__title">Step 1 · Upload evidence</div>
+          <div class="uploader">
+            <label class="uploader__label" for="docUpload">Evidence files (images or PDF)</label>
+            <input
+              id="docUpload"
+              type="file"
+              accept="image/*,.pdf,application/pdf"
+              multiple
+              (change)="onFilesSelected($event)"
+            />
+          </div>
+        </div>
+
+        <div class="step-card" [class.step-card--disabled]="docs.length === 0">
+          <div class="step-card__title">Step 2 · Select output fields</div>
+          <div class="field-select">
+            @for (opt of outputFieldOptions; track opt.key) {
+              <label class="field-select__item">
+                <input
+                  type="checkbox"
+                  [checked]="isOutputFieldSelected(opt.key)"
+                  [disabled]="docs.length === 0"
+                  (change)="toggleOutputField(opt.key, $any($event.target).checked)"
+                />
+                <span>{{ opt.label }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="step-card" [class.step-card--disabled]="!hasSelectedOutputFields || docs.length === 0">
+          <div class="step-card__title">Step 3 · Generate result</div>
+          <div class="actions" aria-label="Generate actions">
+            <button
+              type="button"
+              class="action action--primary"
+              [disabled]="!canGenerateResult"
+              (click)="generateResult()"
+              title="Run OCR and auto-fill selected verified fields"
+            >
+              Generate Result
+            </button>
+
+            <button
+              type="button"
+              class="action"
+              [disabled]="docs.length === 0"
+              (click)="autoMatchByDocumentId()"
+              title="Auto-link samples where Document ID matches evidence Document ID"
+            >
+              Auto-match by Document ID
+            </button>
+
+            <button
+              type="button"
+              class="action"
+              [disabled]="!selectedSampleRow || !selectedDoc"
+              (click)="linkSelectedDocToSelectedRow()"
+            >
+              Link selected doc to selected sample
+            </button>
+          </div>
+          <div class="hint">
+            @if (isGenerating) {
+              Generating…
+            } @else if (generateError) {
+              {{ generateError }}
+            } @else if (docs.length === 0) {
+              Upload evidence documents.
+            } @else if (!hasSelectedOutputFields) {
+              Select at least one output field.
+            } @else {
+              Ready to generate.
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="annotate" aria-label="Annotation controls">
+        <div class="annotate__title">Manual annotation (optional)</div>
+        <div class="annotate__row">
+          <label class="annotate__field">
+            <span class="annotate__label">Field</span>
+            <select
+              class="annotate__select"
+              [value]="annotationField"
+              (change)="annotationField = $any($event.target).value"
+            >
+              @for (opt of fieldOptions; track opt.key) {
+                <option [value]="opt.key">{{ opt.label }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="annotate__field annotate__field--wide">
+            <span class="annotate__label">Value</span>
+            <input
+              class="annotate__input"
+              type="text"
+              placeholder="Type the verified value"
+              [value]="annotationValue"
+              (input)="annotationValue = $any($event.target).value"
+            />
+          </label>
+        </div>
+
+        <div class="annotate__row">
+          <button
+            type="button"
+            class="action"
+            [disabled]="!selectedSampleRow || !selectedDoc || !selectedDocIsImage"
+            (click)="startDrawMode()"
+          >
+            Draw box on image
+          </button>
+
+          <button
+            type="button"
+            class="action"
+            [disabled]="!pendingRect || !selectedSampleRow || !selectedDoc"
+            (click)="saveAnnotation()"
+          >
+            Save annotation
+          </button>
+
+          <button
+            type="button"
+            class="action"
+            [disabled]="!drawMode && !pendingRect"
+            (click)="cancelDrawMode()"
+          >
+            Cancel
+          </button>
+
+          <div class="hint">
+            @if (!selectedSampleRow) {
+              Select a sample row.
+            } @else if (!selectedDoc) {
+              Select an evidence document.
+            } @else if (!selectedDocIsImage) {
+              Drawing is available for image files only.
+            } @else if (drawMode) {
+              Drag on the image to draw a box.
+            } @else {
+              Choose a field and value, then draw.
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="evidence">
+        <div class="evidence__list" aria-label="Uploaded documents list">
+          @if (docs.length === 0) {
+            <div class="empty">No documents uploaded yet.</div>
+          } @else {
+            @for (doc of docs; track doc.id) {
+              <div class="docItem" [class.docItem--active]="doc.id === selectedDocId">
+                <button
+                  type="button"
+                  class="docSelect"
+                  (click)="selectDoc(doc.id)"
+                >
+                  <div class="doc__name">{{ doc.name }}</div>
+                  <div class="doc__meta mono">{{ doc.mimeType }}</div>
+                </button>
+
+                <label class="docField">
+                  <span class="docField__label">Document ID</span>
+                  <input
+                    class="docField__input"
+                    type="text"
+                    placeholder="e.g., INV-1099"
+                    [value]="doc.documentId || ''"
+                    (click)="$event.stopPropagation()"
+                    (input)="setEvidenceDocumentId(doc.id, $any($event.target).value)"
+                  />
+                </label>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="evidence__viewer" id="evidenceViewer" aria-label="Document viewer">
+          @if (!selectedDoc) {
+            <div class="empty">Select a document to preview.</div>
+          } @else {
+            <div
+              class="viewer"
+              [class.viewer--draw]="drawMode && selectedDocIsImage"
+              (mousedown)="onViewerMouseDown($event)"
+              (mousemove)="onViewerMouseMove($event)"
+              (mouseup)="onViewerMouseUp()"
+              (mouseleave)="onViewerMouseUp()"
+            >
+              @if (selectedDocIsPdf) {
+                <object
+                  class="viewer__pdf"
+                  [data]="selectedPdfSafeUrl"
+                  type="application/pdf"
+                >
+                  <div class="empty">PDF preview is unavailable in this browser.</div>
+                </object>
+              } @else {
+                <img
+                  id="viewerImg"
+                  class="viewer__img"
+                  [src]="selectedDoc.objectUrl"
+                  [alt]="selectedDoc.name"
+                  draggable="false"
+                />
+              }
+
+              @if (selectedDocIsImage && highlightRect && highlightDocId === selectedDocId) {
+                <div
+                  class="rect rect--highlight"
+                  [style.left]="(highlightRect.x * 100) + '%'"
+                  [style.top]="(highlightRect.y * 100) + '%'"
+                  [style.width]="(highlightRect.w * 100) + '%'"
+                  [style.height]="(highlightRect.h * 100) + '%'"
+                ></div>
+              }
+
+              @if (selectedDocIsImage && pendingRect) {
+                <div
+                  class="rect rect--pending"
+                  [style.left]="(pendingRect.x * 100) + '%'"
+                  [style.top]="(pendingRect.y * 100) + '%'"
+                  [style.width]="(pendingRect.w * 100) + '%'"
+                  [style.height]="(pendingRect.h * 100) + '%'"
+                ></div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
