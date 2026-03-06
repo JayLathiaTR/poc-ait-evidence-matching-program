@@ -324,25 +324,6 @@
             >
               Generate Result
             </button>
-
-            <button
-              type="button"
-              class="action"
-              [disabled]="docs.length === 0"
-              (click)="autoMatchByDocumentId()"
-              title="Auto-link samples where Document ID matches evidence Document ID"
-            >
-              Auto-match by Document ID
-            </button>
-
-            <button
-              type="button"
-              class="action"
-              [disabled]="!selectedSampleRow || !selectedDoc"
-              (click)="linkSelectedDocToSelectedRow()"
-            >
-              Link selected doc to selected sample
-            </button>
           </div>
           <div class="hint">
             @if (isGenerating) {
@@ -355,78 +336,6 @@
               Select at least one output field.
             } @else {
               Ready to generate.
-            }
-          </div>
-        </div>
-      </div>
-
-      <div class="annotate" aria-label="Annotation controls">
-        <div class="annotate__title">Manual annotation (optional)</div>
-        <div class="annotate__row">
-          <label class="annotate__field">
-            <span class="annotate__label">Field</span>
-            <select
-              class="annotate__select"
-              [value]="annotationField"
-              (change)="annotationField = $any($event.target).value"
-            >
-              @for (opt of fieldOptions; track opt.key) {
-                <option [value]="opt.key">{{ opt.label }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="annotate__field annotate__field--wide">
-            <span class="annotate__label">Value</span>
-            <input
-              class="annotate__input"
-              type="text"
-              placeholder="Type the verified value"
-              [value]="annotationValue"
-              (input)="annotationValue = $any($event.target).value"
-            />
-          </label>
-        </div>
-
-        <div class="annotate__row">
-          <button
-            type="button"
-            class="action"
-            [disabled]="!selectedSampleRow || !selectedDoc || !selectedDocIsImage"
-            (click)="startDrawMode()"
-          >
-            Draw box on image
-          </button>
-
-          <button
-            type="button"
-            class="action"
-            [disabled]="!pendingRect || !selectedSampleRow || !selectedDoc"
-            (click)="saveAnnotation()"
-          >
-            Save annotation
-          </button>
-
-          <button
-            type="button"
-            class="action"
-            [disabled]="!drawMode && !pendingRect"
-            (click)="cancelDrawMode()"
-          >
-            Cancel
-          </button>
-
-          <div class="hint">
-            @if (!selectedSampleRow) {
-              Select a sample row.
-            } @else if (!selectedDoc) {
-              Select an evidence document.
-            } @else if (!selectedDocIsImage) {
-              Drawing is available for image files only.
-            } @else if (drawMode) {
-              Drag on the image to draw a box.
-            } @else {
-              Choose a field and value, then draw.
             }
           </div>
         </div>
@@ -447,18 +356,6 @@
                   <div class="doc__name">{{ doc.name }}</div>
                   <div class="doc__meta mono">{{ doc.mimeType }}</div>
                 </button>
-
-                <label class="docField">
-                  <span class="docField__label">Document ID</span>
-                  <input
-                    class="docField__input"
-                    type="text"
-                    placeholder="e.g., INV-1099"
-                    [value]="doc.documentId || ''"
-                    (click)="$event.stopPropagation()"
-                    (input)="setEvidenceDocumentId(doc.id, $any($event.target).value)"
-                  />
-                </label>
               </div>
             }
           }
@@ -470,11 +367,6 @@
           } @else {
             <div
               class="viewer"
-              [class.viewer--draw]="drawMode && selectedDocIsImage"
-              (mousedown)="onViewerMouseDown($event)"
-              (mousemove)="onViewerMouseMove($event)"
-              (mouseup)="onViewerMouseUp()"
-              (mouseleave)="onViewerMouseUp()"
             >
               @if (selectedDocIsPdf) {
                 <object
@@ -501,16 +393,6 @@
                   [style.top]="(highlightRect.y * 100) + '%'"
                   [style.width]="(highlightRect.w * 100) + '%'"
                   [style.height]="(highlightRect.h * 100) + '%'"
-                ></div>
-              }
-
-              @if (selectedDocIsImage && pendingRect) {
-                <div
-                  class="rect rect--pending"
-                  [style.left]="(pendingRect.x * 100) + '%'"
-                  [style.top]="(pendingRect.y * 100) + '%'"
-                  [style.width]="(pendingRect.w * 100) + '%'"
-                  [style.height]="(pendingRect.h * 100) + '%'"
                 ></div>
               }
             </div>
