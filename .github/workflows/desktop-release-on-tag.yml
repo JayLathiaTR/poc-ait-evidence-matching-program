@@ -19,6 +19,7 @@ jobs:
     runs-on: windows-latest
     env:
       TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+      NPM_REGISTRY_URL: https://tr1.jfrog.io/tr1/api/npm/npm/
 
     steps:
       - name: Checkout
@@ -35,21 +36,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
+          registry-url: ${{ env.NPM_REGISTRY_URL }}
+          always-auth: true
 
-      - name: Normalize lockfile registry for CI
+      - name: Validate npm auth token
         shell: pwsh
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.TR_JFROG_NPM_TOKEN }}
         run: |
-          $lockFile = "server/package-lock.json"
-          $raw = Get-Content $lockFile -Raw
-          $normalized = $raw -replace "https://tr1\.jfrog\.io/tr1/api/npm/npm/", "https://registry.npmjs.org/"
-          if ($normalized -ne $raw) {
-            Set-Content -Path $lockFile -Value $normalized -NoNewline
+          if ([string]::IsNullOrWhiteSpace($env:NODE_AUTH_TOKEN)) {
+            throw "Missing secret TR_JFROG_NPM_TOKEN. Add your TR JFrog npm token in repository secrets."
           }
 
       - name: Install OCR server dependencies
         env:
-          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
-          NPM_CONFIG_ALWAYS_AUTH: false
+          NODE_AUTH_TOKEN: ${{ secrets.TR_JFROG_NPM_TOKEN }}
         run: npm ci --omit=dev --prefix server --no-audit --fund=false
 
       - name: Restore
