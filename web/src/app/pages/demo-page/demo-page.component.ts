@@ -63,6 +63,7 @@ type UploadedDoc = {
   objectUrl: string;
   file: File;
   documentId?: string;
+  isSelected: boolean;
 };
 
 type OcrWord = {
@@ -157,6 +158,9 @@ export class DemoPageComponent implements OnDestroy {
   selectedTransactionId: string | null = null;
 
   isGenerating = false;
+  generationProgressPercent = 0;
+  generationProgressText = 'Ready to generate.';
+  clearEvidenceConfirmVisible = false;
   generateError: string | null = null;
   private ocrByDocId = new Map<string, OcrResult>();
 
@@ -250,6 +254,7 @@ export class DemoPageComponent implements OnDestroy {
         objectUrl,
         file,
         documentId: this.tryExtractDocumentIdFromFilename(file.name),
+        isSelected: false,
       });
     }
 
@@ -431,6 +436,22 @@ export class DemoPageComponent implements OnDestroy {
     return this.docs.length > 0 && this.hasSelectedOutputFields && !this.isGenerating;
   }
 
+  get canEditInputs(): boolean {
+    return !this.isGenerating;
+  }
+
+  get hasSelectedEvidenceForBulkDelete(): boolean {
+    return this.docs.some((d) => d.isSelected);
+  }
+
+  get canRemoveSelectedEvidence(): boolean {
+    return this.canEditInputs && this.hasSelectedEvidenceForBulkDelete;
+  }
+
+  get canClearEvidenceFiles(): boolean {
+    return this.canEditInputs && this.docs.length > 0;
+  }
+
   isRowMissingDocumentId(row: SampleRow): boolean {
     return !this.hasRequiredDocumentId(row);
   }
@@ -487,25 +508,72 @@ export class DemoPageComponent implements OnDestroy {
     );
   }
 
+  toggleEvidenceSelected(evidenceId: string, checked: boolean): void {
+    if (!this.canEditInputs) return;
+    this.docs = this.docs.map((doc) =>
+      doc.id === evidenceId ? { ...doc, isSelected: checked } : doc,
+    );
+  }
+
+  removeEvidence(evidenceId: string): void {
+    if (!this.canEditInputs) return;
+    this.removeEvidenceByIds(new Set([evidenceId]));
+  }
+
+  removeSelectedEvidence(): void {
+    if (!this.canRemoveSelectedEvidence) return;
+    const ids = new Set(this.docs.filter((d) => d.isSelected).map((d) => d.id));
+    this.removeEvidenceByIds(ids);
+  }
+
+  requestClearEvidenceFiles(): void {
+    if (!this.canClearEvidenceFiles) return;
+    this.clearEvidenceConfirmVisible = true;
+  }
+
+  cancelClearEvidenceFiles(): void {
+    this.clearEvidenceConfirmVisible = false;
+  }
+
+  confirmClearEvidenceFiles(): void {
+    if (!this.canClearEvidenceFiles) {
+      this.clearEvidenceConfirmVisible = false;
+      return;
+    }
+    this.removeEvidenceByIds(new Set(this.docs.map((d) => d.id)));
+    this.clearEvidenceConfirmVisible = false;
+  }
+
   async generateResult(): Promise<void> {
     if (!this.canGenerateResult) return;
 
     this.isGenerating = true;
+    this.clearEvidenceConfirmVisible = false;
+    this.generationProgressPercent = 0;
+    this.generationProgressText = 'Starting generation...';
     this.generateError = null;
 
     try {
+      const totalSteps = Math.max(1, this.docs.length + this.sampleRows.length);
+      let completedSteps = 0;
+
       // 1) OCR each doc (cache results per evidence id).
       for (const doc of this.docs) {
         if (!this.ocrByDocId.has(doc.id)) {
           const ocr = await this.ocrDocument(doc);
           this.ocrByDocId.set(doc.id, ocr);
         }
+        completedSteps += 1;
+        this.updateGenerationProgress('OCR processing', completedSteps, totalSteps);
       }
 
       // 2) Auto-match rows.
       const docImages = await this.getDocImageSizes();
 
       this.sampleRows = this.sampleRows.map((row) => {
+        completedSteps += 1;
+        this.updateGenerationProgress('Matching transactions', completedSteps, totalSteps);
+
         if (!this.hasRequiredDocumentId(row)) {
           return {
             ...row,
@@ -689,13 +757,82 @@ export class DemoPageComponent implements OnDestroy {
 
         return next;
       });
+
+      this.generationProgressPercent = 100;
+      this.generationProgressText = 'Generation completed (100%).';
     } catch (err) {
       this.generateError =
         err && typeof (err as any).message === 'string'
           ? (err as any).message
           : String(err);
+      this.generationProgressText = 'Generation failed.';
     } finally {
       this.isGenerating = false;
+      if (this.generationProgressPercent < 100 && !this.generateError) {
+        this.generationProgressText = 'Ready to generate.';
+      }
+    }
+  }
+
+  private updateGenerationProgress(phase: string, completed: number, total: number): void {
+    const safeTotal = Math.max(1, total);
+    const percent = Math.max(0, Math.min(100, Math.round((completed / safeTotal) * 100)));
+    this.generationProgressPercent = percent;
+    this.generationProgressText = `${phase}: ${completed}/${safeTotal} (${percent}%)`;
+  }
+
+  private removeEvidenceByIds(idsToRemove: Set<string>): void {
+    if (idsToRemove.size === 0) return;
+
+    const removedDocs = this.docs.filter((doc) => idsToRemove.has(doc.id));
+    for (const doc of removedDocs) {
+      URL.revokeObjectURL(doc.objectUrl);
+      this.ocrByDocId.delete(doc.id);
+    }
+
+    this.docs = this.docs.filter((doc) => !idsToRemove.has(doc.id));
+
+    if (this.selectedDocId && idsToRemove.has(this.selectedDocId)) {
+      this.selectedDocId = this.docs[0]?.id ?? null;
+    }
+
+    if (this.highlightDocId && idsToRemove.has(this.highlightDocId)) {
+      this.highlightDocId = null;
+      this.highlightRect = null;
+    }
+
+    this.sampleRows = this.sampleRows.map((row) => {
+      const removedLinkedDoc = row.linkedEvidenceDocId && idsToRemove.has(row.linkedEvidenceDocId);
+      const removedShippingDoc = row.shippingSourceDocId && idsToRemove.has(row.shippingSourceDocId);
+
+      const currentAnnotations = row.annotations ?? {};
+      const filteredEntries = Object.entries(currentAnnotations).filter(([, annotation]) => {
+        if (!annotation) return false;
+        return !idsToRemove.has(annotation.docId);
+      });
+      const filteredAnnotations = Object.fromEntries(filteredEntries) as Partial<Record<FieldKey, FieldAnnotation>>;
+
+      if (!removedLinkedDoc && !removedShippingDoc && filteredEntries.length === Object.keys(currentAnnotations).length) {
+        return row;
+      }
+
+      return {
+        ...row,
+        linkedEvidenceDocId: removedLinkedDoc ? undefined : row.linkedEvidenceDocId,
+        verifiedDocumentId: removedLinkedDoc ? '' : row.verifiedDocumentId,
+        verifiedCustomerName: removedLinkedDoc ? '' : row.verifiedCustomerName,
+        verifiedDocumentDate: removedLinkedDoc ? '' : row.verifiedDocumentDate,
+        verifiedAmount: removedLinkedDoc ? undefined : row.verifiedAmount,
+        verifiedShippingDate: removedShippingDoc || removedLinkedDoc ? '' : row.verifiedShippingDate,
+        verifiedShippingAddress: removedShippingDoc || removedLinkedDoc ? '' : row.verifiedShippingAddress,
+        shippingSourceType: removedShippingDoc || removedLinkedDoc ? undefined : row.shippingSourceType,
+        shippingSourceDocId: removedShippingDoc || removedLinkedDoc ? undefined : row.shippingSourceDocId,
+        annotations: filteredAnnotations,
+      };
+    });
+
+    if (this.docs.length === 0) {
+      this.clearEvidenceConfirmVisible = false;
     }
   }
 

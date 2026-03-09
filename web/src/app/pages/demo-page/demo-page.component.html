@@ -290,6 +290,7 @@
               type="file"
               accept="image/*,.pdf,application/pdf"
               multiple
+              [disabled]="!canEditInputs"
               (change)="onFilesSelected($event)"
             />
           </div>
@@ -303,7 +304,7 @@
                 <input
                   type="checkbox"
                   [checked]="isOutputFieldSelected(opt.key)"
-                  [disabled]="docs.length === 0"
+                  [disabled]="docs.length === 0 || !canEditInputs"
                   (change)="toggleOutputField(opt.key, $any($event.target).checked)"
                 />
                 <span>{{ opt.label }}</span>
@@ -322,13 +323,17 @@
               (click)="generateResult()"
               title="Run OCR and auto-fill selected verified fields"
             >
-              Generate Result
+              Generate Verification
             </button>
           </div>
+          @if (isGenerating) {
+            <div class="progress-wrap" aria-label="Generation progress">
+              <progress class="progress" [value]="generationProgressPercent" max="100"></progress>
+              <span class="progress__text">{{ generationProgressText }}</span>
+            </div>
+          }
           <div class="hint">
-            @if (isGenerating) {
-              Generating…
-            } @else if (generateError) {
+            @if (generateError) {
               {{ generateError }}
             } @else if (docs.length === 0) {
               Upload evidence documents.
@@ -342,12 +347,27 @@
       </div>
 
       <div class="evidence">
+        <div class="evidence__head">
+          <div class="panel__title">Evidence Files</div>
+          <div class="actions">
+            <button type="button" class="action" [disabled]="!canRemoveSelectedEvidence" (click)="removeSelectedEvidence()">Remove selected</button>
+            <button type="button" class="action" [disabled]="!canClearEvidenceFiles" (click)="requestClearEvidenceFiles()">Clear all files</button>
+          </div>
+        </div>
+
         <div class="evidence__list" aria-label="Uploaded documents list">
           @if (docs.length === 0) {
             <div class="empty">No documents uploaded yet.</div>
           } @else {
             @for (doc of docs; track doc.id) {
               <div class="docItem" [class.docItem--active]="doc.id === selectedDocId">
+                <input
+                  type="checkbox"
+                  [checked]="doc.isSelected"
+                  [disabled]="!canEditInputs"
+                  (click)="$event.stopPropagation()"
+                  (change)="toggleEvidenceSelected(doc.id, $any($event.target).checked)"
+                />
                 <button
                   type="button"
                   class="docSelect"
@@ -355,6 +375,15 @@
                 >
                   <div class="doc__name">{{ doc.name }}</div>
                   <div class="doc__meta mono">{{ doc.mimeType }}</div>
+                </button>
+                <button
+                  type="button"
+                  class="docDelete"
+                  title="Delete file"
+                  [disabled]="!canEditInputs"
+                  (click)="$event.stopPropagation(); removeEvidence(doc.id)"
+                >
+                  Delete
                 </button>
               </div>
             }
@@ -401,4 +430,17 @@
       </div>
     </section>
   </div>
+
+  @if (clearEvidenceConfirmVisible) {
+    <div class="confirmOverlay" role="dialog" aria-modal="true" aria-label="Confirm clear all evidence files">
+      <div class="confirmCard">
+        <div class="confirmCard__title">Confirm Clear All</div>
+        <div class="confirmCard__text">Remove all uploaded evidence files? This action cannot be undone.</div>
+        <div class="actions confirmCard__actions">
+          <button type="button" class="action" (click)="cancelClearEvidenceFiles()">Cancel</button>
+          <button type="button" class="action action--primary" (click)="confirmClearEvidenceFiles()">Yes, clear all</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>
