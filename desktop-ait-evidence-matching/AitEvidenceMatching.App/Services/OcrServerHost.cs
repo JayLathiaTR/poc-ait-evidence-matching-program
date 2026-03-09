@@ -46,6 +46,12 @@ public sealed class OcrServerHost : IDisposable
                 $"OCR server entry file not found: {entryFile}");
         }
 
+        var npmInstallResult = await EnsureServerDependenciesAsync(serverDirectory, cancellationToken);
+        if (!npmInstallResult.IsHealthy)
+        {
+            return npmInstallResult;
+        }
+
         var startInfo = new ProcessStartInfo
         {
             FileName = nodePath,
@@ -76,6 +82,66 @@ public sealed class OcrServerHost : IDisposable
             healthy
                 ? "OCR server started and healthy at http://127.0.0.1:3001/health"
                 : "OCR server started but did not pass health check in time.");
+    }
+
+    private async Task<OcrServerStartResult> EnsureServerDependenciesAsync(string serverDirectory, CancellationToken cancellationToken)
+    {
+        var packageJson = Path.Combine(serverDirectory, "package.json");
+        if (!File.Exists(packageJson))
+        {
+            return new OcrServerStartResult(false,
+                $"OCR server package.json not found: {packageJson}");
+        }
+
+        var nodeModules = Path.Combine(serverDirectory, "node_modules");
+        if (Directory.Exists(nodeModules))
+        {
+            return new OcrServerStartResult(true, "OCR server dependencies are already present.");
+        }
+
+        var npmFileName = OperatingSystem.IsWindows() ? "npm.cmd" : "npm";
+        var installInfo = new ProcessStartInfo
+        {
+            FileName = npmFileName,
+            Arguments = "ci --omit=dev",
+            WorkingDirectory = serverDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+        };
+
+        using var npmProcess = new Process { StartInfo = installInfo, EnableRaisingEvents = true };
+        npmProcess.OutputDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data)) LogReceived?.Invoke($"npm: {e.Data}");
+        };
+        npmProcess.ErrorDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data)) LogReceived?.Invoke($"npm ERR: {e.Data}");
+        };
+
+        try
+        {
+            LogReceived?.Invoke("npm dependencies missing. Running 'npm ci --omit=dev' for OCR server...");
+            npmProcess.Start();
+            npmProcess.BeginOutputReadLine();
+            npmProcess.BeginErrorReadLine();
+            await npmProcess.WaitForExitAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return new OcrServerStartResult(false,
+                $"Could not run npm install for OCR server. Ensure Node.js/npm are installed. Details: {ex.Message}");
+        }
+
+        if (npmProcess.ExitCode != 0)
+        {
+            return new OcrServerStartResult(false,
+                $"npm dependency install failed with exit code {npmProcess.ExitCode}. Ensure internet access or pre-bundle server dependencies.");
+        }
+
+        return new OcrServerStartResult(true, "OCR server dependencies installed.");
     }
 
     public async Task StopAsync()

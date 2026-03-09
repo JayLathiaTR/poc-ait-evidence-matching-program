@@ -13,6 +13,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\server\**\*"
+             Exclude="..\..\server\node_modules\**\*;..\..\server\.tesseract-cache\**\*">
+      <Link>server\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.10" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.10" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.10" />
