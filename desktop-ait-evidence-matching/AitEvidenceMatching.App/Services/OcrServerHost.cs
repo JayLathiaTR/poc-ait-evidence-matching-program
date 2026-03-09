@@ -46,7 +46,7 @@ public sealed class OcrServerHost : IDisposable
                 $"OCR server entry file not found: {entryFile}");
         }
 
-        var npmInstallResult = await EnsureServerDependenciesAsync(serverDirectory, cancellationToken);
+        var npmInstallResult = await EnsureServerDependenciesAsync(serverDirectory, nodePath, cancellationToken);
         if (!npmInstallResult.IsHealthy)
         {
             return npmInstallResult;
@@ -84,7 +84,7 @@ public sealed class OcrServerHost : IDisposable
                 : "OCR server started but did not pass health check in time.");
     }
 
-    private async Task<OcrServerStartResult> EnsureServerDependenciesAsync(string serverDirectory, CancellationToken cancellationToken)
+    private async Task<OcrServerStartResult> EnsureServerDependenciesAsync(string serverDirectory, string nodePath, CancellationToken cancellationToken)
     {
         var packageJson = Path.Combine(serverDirectory, "package.json");
         if (!File.Exists(packageJson))
@@ -99,7 +99,7 @@ public sealed class OcrServerHost : IDisposable
             return new OcrServerStartResult(true, "OCR server dependencies are already present.");
         }
 
-        var npmFileName = OperatingSystem.IsWindows() ? "npm.cmd" : "npm";
+        var npmFileName = ResolveNpmExecutable(nodePath);
         var installInfo = new ProcessStartInfo
         {
             FileName = npmFileName,
@@ -132,7 +132,7 @@ public sealed class OcrServerHost : IDisposable
         catch (Exception ex)
         {
             return new OcrServerStartResult(false,
-                $"Could not run npm install for OCR server. Ensure Node.js/npm are installed. Details: {ex.Message}");
+                $"Could not run npm install for OCR server. Ensure Node.js/npm are installed or bundled. Details: {ex.Message}");
         }
 
         if (npmProcess.ExitCode != 0)
@@ -175,6 +175,21 @@ public sealed class OcrServerHost : IDisposable
 
         // Fall back to PATH-installed node.
         return "node";
+    }
+
+    private static string ResolveNpmExecutable(string nodePath)
+    {
+        var nodeDirectory = Path.GetDirectoryName(nodePath);
+        if (!string.IsNullOrWhiteSpace(nodeDirectory))
+        {
+            var bundledNpm = Path.Combine(nodeDirectory, OperatingSystem.IsWindows() ? "npm.cmd" : "npm");
+            if (File.Exists(bundledNpm))
+            {
+                return bundledNpm;
+            }
+        }
+
+        return OperatingSystem.IsWindows() ? "npm.cmd" : "npm";
     }
 
     private static string? ResolveServerDirectory()

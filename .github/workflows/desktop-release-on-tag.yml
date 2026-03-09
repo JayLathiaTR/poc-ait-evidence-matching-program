@@ -31,6 +31,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install OCR server dependencies
+        run: npm ci --omit=dev --prefix server
+
       - name: Restore
         run: dotnet restore desktop-ait-evidence-matching/AitEvidenceMatching.sln
 
@@ -42,6 +50,11 @@ jobs:
         run: |
           $tag = "${{ env.TAG_NAME }}"
           $publishDir = "desktop-ait-evidence-matching/AitEvidenceMatching.App/bin/Release/net10.0/win-x64/publish"
+          $nodeExe = (Get-Command node).Source
+          $nodeDir = Split-Path $nodeExe -Parent
+          New-Item -ItemType Directory -Path "$publishDir/node" -Force | Out-Null
+          Copy-Item "$nodeDir/*" "$publishDir/node" -Recurse -Force
+
           New-Item -ItemType Directory -Path "release-artifacts" -Force | Out-Null
           Copy-Item "$publishDir/AitEvidenceMatching.App.exe" "release-artifacts/AitEvidenceMatching.App-$tag-win-x64.exe"
           Compress-Archive -Path "$publishDir\*" -DestinationPath "release-artifacts/AitEvidenceMatching.App-$tag-win-x64.zip" -Force

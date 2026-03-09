@@ -14,9 +14,9 @@
 
   <ItemGroup>
     <Content Include="..\..\server\**\*"
-             Exclude="..\..\server\node_modules\**\*;..\..\server\.tesseract-cache\**\*">
+             Exclude="..\..\server\.tesseract-cache\**\*">
       <Link>server\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
