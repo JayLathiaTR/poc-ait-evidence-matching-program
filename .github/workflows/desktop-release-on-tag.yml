@@ -42,15 +42,15 @@ jobs:
       - name: Validate npm auth token
         shell: pwsh
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.TR_JFROG_NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.JFROG_NPM_TOKEN }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:NODE_AUTH_TOKEN)) {
-            throw "Missing secret TR_JFROG_NPM_TOKEN. Add your TR JFrog npm token in repository secrets."
+            throw "Missing secret JFROG_NPM_TOKEN. Add your TR JFrog npm token in repository secrets."
           }
 
       - name: Install OCR server dependencies
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.TR_JFROG_NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.JFROG_NPM_TOKEN }}
         run: npm ci --omit=dev --prefix server --no-audit --fund=false
 
       - name: Restore
