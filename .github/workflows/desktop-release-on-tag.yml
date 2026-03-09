@@ -4,14 +4,27 @@ on:
   push:
     tags:
       - '*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and upload (example: v1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   publish-desktop:
     runs-on: windows-latest
+    env:
+      TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG_NAME }}
 
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
@@ -27,7 +40,7 @@ jobs:
       - name: Stage executable artifact
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
+          $tag = "${{ env.TAG_NAME }}"
           $publishDir = "desktop-ait-evidence-matching/AitEvidenceMatching.App/bin/Release/net10.0/win-x64/publish"
           New-Item -ItemType Directory -Path "release-artifacts" -Force | Out-Null
           Copy-Item "$publishDir/AitEvidenceMatching.App.exe" "release-artifacts/AitEvidenceMatching.App-$tag-win-x64.exe"
@@ -35,5 +48,13 @@ jobs:
       - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AitEvidenceMatching.App-${{ github.ref_name }}-win-x64
+          name: AitEvidenceMatching.App-${{ env.TAG_NAME }}-win-x64
           path: release-artifacts/*.exe
+
+      - name: Upload executable to release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          files: release-artifacts/*.exe
+          fail_on_unmatched_files: true
+          overwrite_files: true
