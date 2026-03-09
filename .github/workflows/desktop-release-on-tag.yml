@@ -56,23 +56,18 @@ jobs:
           Copy-Item "$nodeDir/*" "$publishDir/node" -Recurse -Force
 
           New-Item -ItemType Directory -Path "release-artifacts" -Force | Out-Null
-          Copy-Item "$publishDir/AitEvidenceMatching.App.exe" "release-artifacts/AitEvidenceMatching.App-$tag-win-x64.exe"
           Compress-Archive -Path "$publishDir\*" -DestinationPath "release-artifacts/AitEvidenceMatching.App-$tag-win-x64.zip" -Force
 
       - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
           name: AitEvidenceMatching.App-${{ env.TAG_NAME }}-win-x64
-          path: |
-            release-artifacts/*.exe
-            release-artifacts/*.zip
+          path: release-artifacts/*.zip
 
       - name: Upload executable to release assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          files: |
-            release-artifacts/*.exe
-            release-artifacts/*.zip
+          files: release-artifacts/*.zip
           fail_on_unmatched_files: true
           overwrite_files: true
