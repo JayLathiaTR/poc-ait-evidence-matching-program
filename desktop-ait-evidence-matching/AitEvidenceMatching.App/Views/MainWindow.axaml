@@ -1,0 +1,312 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:AitEvidenceMatching.App.ViewModels"
+    xmlns:models="using:AitEvidenceMatching.App.Models"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="980" d:DesignHeight="620"
+        x:Class="AitEvidenceMatching.App.Views.MainWindow"
+        x:CompileBindings="False"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="AitEvidenceMatching.App"
+        MinWidth="900"
+        MinHeight="560">
+
+    <Window.Styles>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#FF1F2937" />
+        </Style>
+    </Window.Styles>
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*" Margin="16" RowSpacing="10">
+        <StackPanel Grid.Row="0" Spacing="6">
+            <TextBlock Text="AIT Evidence Matching" FontSize="36" FontWeight="Bold" />
+            <TextBlock Text="Import samples, select verification outputs, and generate evidence-backed results" Opacity="0.72" />
+        </StackPanel>
+
+        <Grid Grid.Row="1" ColumnDefinitions="2*,*" ColumnSpacing="12">
+            <Grid Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="10">
+                <Border Grid.Row="0" BorderBrush="#66808080" BorderThickness="1" CornerRadius="10" Padding="12" VerticalAlignment="Top">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Sample Transactions" FontWeight="SemiBold" FontSize="22" />
+                        <TextBlock Text="Import from CSV or Excel" Opacity="0.72" />
+
+                        <Border BorderBrush="#33808080" BorderThickness="1" CornerRadius="8" Padding="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="6">
+                                <Button Grid.Row="0" Grid.Column="0" Content="Import sample file" Click="OnImportSampleClicked" IsEnabled="{Binding CanEditInputs}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PendingSampleFilename}" VerticalAlignment="Center" Opacity="0.72" />
+                                <Button Grid.Row="0" Grid.Column="2" Content="Download Sample Template" Click="OnDownloadSampleTemplateClicked" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Text="System first tries exact header matching, then auto-maps remaining columns. You can adjust from the dropdown before import." Opacity="0.72" TextWrapping="Wrap" />
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Text="{Binding ImportStatus}" Opacity="0.72" TextWrapping="Wrap" />
+
+                        <StackPanel IsVisible="{Binding HasPendingImport}" Spacing="6">
+                            <TextBlock Text="Pending Sample Mapping" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Document ID" VerticalAlignment="Center" />
+                                <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding PendingHeaders}" SelectedItem="{Binding SelectedDocumentIdHeader}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:HeaderOption">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="Customer name" VerticalAlignment="Center" />
+                                <ComboBox Grid.Row="0" Grid.Column="3" ItemsSource="{Binding PendingHeaders}" SelectedItem="{Binding SelectedCustomerNameHeader}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:HeaderOption">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Transaction date" VerticalAlignment="Center" />
+                                <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding PendingHeaders}" SelectedItem="{Binding SelectedTransactionDateHeader}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:HeaderOption">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="Original transaction amount" VerticalAlignment="Center" />
+                                <ComboBox Grid.Row="1" Grid.Column="3" ItemsSource="{Binding PendingHeaders}" SelectedItem="{Binding SelectedAmountHeader}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:HeaderOption">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Apply Import" Command="{Binding ApplySampleImportCommand}" IsEnabled="{Binding CanApplySampleImport}" />
+                                    <Button Content="Clear" Command="{Binding ClearPendingImportCommand}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="1" BorderBrush="#66808080" BorderThickness="1" CornerRadius="8" Padding="8">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Text="Verification Results" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <DataGrid Grid.Row="1" x:Name="SampleRowsGrid" ItemsSource="{Binding SampleRows}" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="True" GridLinesVisibility="All" Margin="0,0,0,8" FrozenColumnCount="4" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Document ID" Binding="{Binding DocumentId}" Width="150" />
+                            <DataGridTextColumn Header="Customer name" Binding="{Binding CustomerName}" Width="200" />
+                            <DataGridTextColumn Header="Transaction date" Binding="{Binding TransactionDate}" Width="160" />
+                            <DataGridTextColumn Header="Original transaction amount" Binding="{Binding OriginalTransactionAmount}" Width="220" />
+                            <DataGridTemplateColumn Header="Verified Document ID" Width="180">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding VerifiedDocumentIdCellBackground}" Padding="6,2">
+                                            <TextBlock Text="{Binding VerifiedDocumentId}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Verified Customer name" Width="200">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding VerifiedCustomerNameCellBackground}" Padding="6,2">
+                                            <TextBlock Text="{Binding VerifiedCustomerName}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Verified Amount" Width="150">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding VerifiedAmountCellBackground}" Padding="6,2">
+                                            <TextBlock Text="{Binding VerifiedAmount}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Verified Document date" Width="180">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding VerifiedDocumentDateCellBackground}" Padding="6,2">
+                                            <TextBlock Text="{Binding VerifiedDocumentDate}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Verified Shipping date" Width="180">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding VerifiedShippingDateCellBackground}" Padding="6,2">
+                                            <TextBlock Text="{Binding VerifiedShippingDate}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Verified Shipping address" Width="220">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding VerifiedShippingAddressCellBackground}" Padding="6,2">
+                                            <TextBlock Text="{Binding VerifiedShippingAddress}" TextWrapping="Wrap" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Column="1" RowDefinitions="Auto,*,*" RowSpacing="10">
+                <Border Grid.Row="0" BorderBrush="#66808080" BorderThickness="1" CornerRadius="10" Padding="12" VerticalAlignment="Top">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Evidence Workflow" FontWeight="SemiBold" FontSize="22" />
+                        <TextBlock Text="Three-step verification flow" Opacity="0.72" />
+
+                        <Border BorderBrush="#33808080" BorderThickness="1" CornerRadius="8" Padding="10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Step 1 - Upload evidence" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Add Evidence Files" Click="OnAddEvidenceFilesClicked" HorizontalAlignment="Left" IsEnabled="{Binding CanEditInputs}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="#33808080" BorderThickness="1" CornerRadius="8" Padding="10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Step 2 - Select output fields" FontWeight="SemiBold" />
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                                    <CheckBox Grid.Row="0" Grid.Column="0" Content="Verified Document ID" IsChecked="{Binding OutputDocumentIdSelected}" />
+                                    <CheckBox Grid.Row="0" Grid.Column="1" Content="Verified Customer name" IsChecked="{Binding OutputCustomerNameSelected}" />
+                                    <CheckBox Grid.Row="1" Grid.Column="0" Content="Verified Amount" IsChecked="{Binding OutputAmountSelected}" />
+                                    <CheckBox Grid.Row="1" Grid.Column="1" Content="Verified Document date" IsChecked="{Binding OutputDocumentDateSelected}" />
+                                    <CheckBox Grid.Row="2" Grid.Column="0" Content="Verified Shipping date" IsChecked="{Binding OutputShippingDateSelected}" />
+                                    <CheckBox Grid.Row="2" Grid.Column="1" Content="Verified Shipping address" IsChecked="{Binding OutputShippingAddressSelected}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="#33808080" BorderThickness="1" CornerRadius="8" Padding="10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Step 3 - Generate result" FontWeight="SemiBold" />
+                                <Button Content="Generate Verification" Command="{Binding GenerateCommand}" HorizontalAlignment="Left" />
+                                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsGenerating}">
+                                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding GenerationProgressPercent}" Width="180" Height="8" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding GenerationProgressText}" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding GenerateError}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="1" BorderBrush="#66808080" BorderThickness="1" CornerRadius="8" Padding="8">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                        <TextBlock Grid.Column="0" Text="Evidence Files" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="Remove selected" Command="{Binding RemoveSelectedEvidenceCommand}" IsEnabled="{Binding CanRemoveSelectedEvidence}" />
+                        <Button Grid.Column="2" Content="Clear all files" Command="{Binding RequestClearEvidenceFilesCommand}" IsEnabled="{Binding CanClearEvidenceFiles}" />
+                    </Grid>
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding EvidenceDocs}" SelectedItem="{Binding SelectedEvidenceDoc}" AutoGenerateColumns="False" CanUserSortColumns="True" GridLinesVisibility="All" Margin="0,0,0,8" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Select" Width="60">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Center" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Filename" Binding="{Binding Name}" Width="190" />
+                            <DataGridTextColumn Header="Document ID" Binding="{Binding DocumentId}" Width="120" />
+                            <DataGridTemplateColumn Header="Action" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Width="28" Height="24"
+                                                ToolTip.Tip="Delete file"
+                                                IsEnabled="{Binding DataContext.CanEditInputs, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                Command="{Binding DataContext.RemoveEvidenceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding .}">
+                                            <PathIcon Data="M3,6 H13 V7 H12 V14 C12,14.55 11.55,15 11,15 H5 C4.45,15 4,14.55 4,14 V7 H3 Z M5,7 V14 H11 V7 Z M6,3 H10 L11,4 H13 V5 H3 V4 H5 Z" Width="12" Height="12" />
+                                        </Button>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+                </Border>
+
+                <Border Grid.Row="2" BorderBrush="#66808080" BorderThickness="1" CornerRadius="8" Padding="8">
+                    <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                        <StackPanel Grid.Row="0" Spacing="4">
+                            <TextBlock Text="Evidence Preview" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding SelectedEvidencePreviewTitle}" Opacity="0.72" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Grid Grid.Row="1">
+                            <StackPanel IsVisible="{Binding ShowEvidencePlaceholder}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6">
+                                <TextBlock Text="Select an evidence file to preview." Opacity="0.72" />
+                            </StackPanel>
+
+                            <ScrollViewer IsVisible="{Binding ShowEvidenceImage}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                <Image Source="{Binding SelectedEvidenceBitmap}" Stretch="Uniform" />
+                            </ScrollViewer>
+
+                            <StackPanel IsVisible="{Binding ShowEvidencePdf}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                                <TextBlock Text="{Binding SelectedEvidencePreviewMessage}" Opacity="0.72" TextWrapping="Wrap" HorizontalAlignment="Center" />
+                                <Button Content="Open PDF" Command="{Binding OpenSelectedEvidenceCommand}" HorizontalAlignment="Center" />
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding ShowEvidenceUnsupported}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                                <TextBlock Text="{Binding SelectedEvidencePreviewMessage}" Opacity="0.72" TextWrapping="Wrap" HorizontalAlignment="Center" />
+                                <Button Content="Open File" Command="{Binding OpenSelectedEvidenceCommand}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <Border Grid.RowSpan="2"
+                Background="#66000000"
+                IsVisible="{Binding ShowClearEvidenceConfirm}"
+            ZIndex="100">
+            <Border Width="420"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Padding="16"
+                    CornerRadius="10"
+                    BorderBrush="#66808080"
+                    BorderThickness="1"
+                    Background="#FFF7F7F7">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Confirm Clear All"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="Remove all uploaded evidence files? This action cannot be undone."
+                               TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="8"
+                                HorizontalAlignment="Right">
+                        <Button Content="Cancel"
+                                Command="{Binding CancelClearEvidenceFilesCommand}" />
+                        <Button Content="Yes, clear all"
+                                Command="{Binding ConfirmClearEvidenceFilesCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+
+</Window>
