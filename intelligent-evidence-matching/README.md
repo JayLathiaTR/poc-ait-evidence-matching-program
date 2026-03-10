@@ -35,5 +35,19 @@ This project is an isolated implementation track for CU-based evidence verificat
 3. Normalization + Linking
 4. Validation + Review Queue + UI progress
 
+## Local Backend Quick Start (Phase 1)
+1. `cd intelligent-evidence-matching/backend`
+2. `npm install`
+3. `npm run dev`
+
+Backend runs at `http://localhost:4010`.
+
+### Smoke Test Endpoints
+- Health:
+	- `GET http://localhost:4010/api/health`
+- Intake + pre-extraction + page routing:
+	- `POST http://localhost:4010/api/phase1/intake-route`
+	- `multipart/form-data` field name: `files` (multi-file supported)
+
 ## Development Rule
 - No commit/push unless explicit approval is given.

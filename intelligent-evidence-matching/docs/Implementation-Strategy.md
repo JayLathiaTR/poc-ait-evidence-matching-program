@@ -155,3 +155,8 @@
 2. **Phase 2:** Pass-2 Grouping + CU Orchestration.
 3. **Phase 3:** Normalization + Linking.
 4. **Phase 4:** Validation + Review Queue + UI progress.
+
+## Operational Metrics Reference
+The detailed measurement and decision logic for scoring and routing is maintained in:
+
+- [Scoring-and-Decision-Metrics.md](./Scoring-and-Decision-Metrics.md)
