@@ -55,7 +55,8 @@
 2. Classify by CU-first-pass result into `invoice`, `shipping`, or `other`.
 3. Run second pass only when needed:
    - `invoice` -> `prebuilt-invoice`
-   - `shipping` -> `prebuilt-purchaseOrder`
+   - `shipping` -> `prebuilt-purchaseOrder` only when shipping intent is purchase-order-like
+   - `shipping` that is bill-of-lading-like stays on `prebuilt-document`
 4. Reuse first-pass output for `other`.
 5. Return technical and extraction statuses separately.
 

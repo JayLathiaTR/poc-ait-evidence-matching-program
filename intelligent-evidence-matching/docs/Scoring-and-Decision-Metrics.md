@@ -39,8 +39,16 @@ Service: CuOrchestrationService
   - `other`
 - Second pass executes only for specialized classes:
   - `invoice` -> `prebuilt-invoice`
-  - `shipping` -> `prebuilt-purchaseOrder`
+  - `shipping` -> `prebuilt-purchaseOrder` only for purchase-order-like shipping payloads
+  - bill-of-lading-like shipping payloads stay on `prebuilt-document`
 - `other` uses first-pass extraction without second pass.
+
+### 2.3 Analyzer diagnostics endpoints
+- `POST /api/cu/analyze/prebuilt-document`
+- `POST /api/cu/analyze/prebuilt-invoice`
+- `POST /api/cu/analyze/prebuilt-purchase-order`
+
+These endpoints are intended for raw analyzer troubleshooting and field-shape inspection.
 
 
 ## 3. CU Execution and Outcome Semantics

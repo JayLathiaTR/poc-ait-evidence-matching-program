@@ -22,7 +22,8 @@ This map enforces clear service boundaries for parallel developer execution.
     - first pass: `prebuilt-document`
     - second pass (conditional):
       - invoice -> `prebuilt-invoice`
-      - shipping -> `prebuilt-purchaseOrder`
+      - shipping (purchase-order-like) -> `prebuilt-purchaseOrder`
+      - shipping (bill-of-lading-like) -> remain on `prebuilt-document`
 
 - `ExtractionNormalizationService`
   - Input: grouped docs + CU results
