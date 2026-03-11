@@ -19,7 +19,10 @@ This map enforces clear service boundaries for parallel developer execution.
   - Input: grouped docs + dispatch decisions
   - Output: CU execution results with `classifiedAs`, `analyzerIdUsed`, extraction payload, and status dimensions
   - Execution policy:
-    - first pass: `prebuilt-document`
+    - first pass analyzer resolution order:
+      - `CU_FIRST_PASS_ANALYZER_ID`
+      - `CU_GENERAL_ANALYZER_ID`
+      - default `prebuilt-documentFields`
     - second pass (conditional):
       - invoice -> `prebuilt-invoice`
       - shipping (purchase-order-like) -> `prebuilt-purchaseOrder`

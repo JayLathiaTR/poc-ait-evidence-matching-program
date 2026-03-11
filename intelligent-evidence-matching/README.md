@@ -52,13 +52,9 @@ Backend runs at `http://localhost:4010`.
 	- `POST http://localhost:4010/api/phase3/intake-normalize-link`
 - End-to-end verification and review queue:
 	- `POST http://localhost:4010/api/phase4/intake-verify`
-- Raw analyzer proxy (single file per request, multipart field `file`):
-	- `POST http://localhost:4010/api/cu/analyze/prebuilt-document`
-	- `POST http://localhost:4010/api/cu/analyze/prebuilt-invoice`
-	- `POST http://localhost:4010/api/cu/analyze/prebuilt-purchase-order`
 
 ## CU-First Policy
-- Every document group is sent to `prebuilt-document` as first pass.
+- Every document group is sent to the configured first-pass analyzer as first pass.
 - First pass output classifies group intent (`invoice`, `shipping`, `other`).
 - A second pass is applied only when first pass indicates a specialized path:
   - `invoice` -> `prebuilt-invoice`
@@ -66,6 +62,13 @@ Backend runs at `http://localhost:4010`.
 	- `shipping` docs that are bill-of-lading-like remain on `prebuilt-document`
 - `other` stays on first-pass output.
 - `unknown` and low-confidence outcomes are resolved in verification/review flow, not by local extraction/routing heuristics.
+
+### First-Pass Analyzer Configuration
+- First-pass analyzer resolution order:
+	- `CU_FIRST_PASS_ANALYZER_ID`
+	- `CU_GENERAL_ANALYZER_ID`
+	- default: `prebuilt-documentFields`
+- Recommended value: `CU_FIRST_PASS_ANALYZER_ID=prebuilt-documentFields`
 
 ## Development Rule
 - No commit/push unless explicit approval is given.

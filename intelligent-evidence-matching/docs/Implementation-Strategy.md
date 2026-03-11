@@ -38,7 +38,7 @@
 **Service name:** `CuOrchestrationService`
 
 **Responsibilities**
-1. Dispatch every group to first-pass `prebuilt-document`.
+1. Dispatch every group to first-pass analyzer target (`document-prebuilt`).
 2. Keep dispatch policy centralized and explicit.
 3. Mark groups for downstream CU execution.
 
@@ -51,14 +51,18 @@
 **Service name:** `CuExecutionService` + executors
 
 **Responsibilities**
-1. Execute first-pass `prebuilt-document` analysis.
+1. Execute first-pass analysis using configured analyzer priority:
+   - `CU_FIRST_PASS_ANALYZER_ID`
+   - fallback `CU_GENERAL_ANALYZER_ID`
+   - default `prebuilt-documentFields`
 2. Classify by CU-first-pass result into `invoice`, `shipping`, or `other`.
 3. Run second pass only when needed:
    - `invoice` -> `prebuilt-invoice`
    - `shipping` -> `prebuilt-purchaseOrder` only when shipping intent is purchase-order-like
    - `shipping` that is bill-of-lading-like stays on `prebuilt-document`
 4. Reuse first-pass output for `other`.
-5. Return technical and extraction statuses separately.
+5. Apply markdown/text fallback extraction for sparse first-pass field output.
+6. Return technical and extraction statuses separately.
 
 **Output**
 - CU extraction payloads with `classifiedAs` and `analyzerIdUsed`.

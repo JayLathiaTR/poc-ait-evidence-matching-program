@@ -32,7 +32,10 @@ Service: CuOrchestrationService
   - `dispatchStatus = queued`
 
 ### 2.2 First-pass and second-pass policy
-- First pass always runs `prebuilt-document`.
+- First pass runs analyzer using resolution order:
+  - `CU_FIRST_PASS_ANALYZER_ID`
+  - `CU_GENERAL_ANALYZER_ID`
+  - default `prebuilt-documentFields`
 - CU first-pass output classifies document intent:
   - `invoice`
   - `shipping`
@@ -43,13 +46,9 @@ Service: CuOrchestrationService
   - bill-of-lading-like shipping payloads stay on `prebuilt-document`
 - `other` uses first-pass extraction without second pass.
 
-### 2.3 Analyzer diagnostics endpoints
-- `POST /api/cu/analyze/prebuilt-document`
-- `POST /api/cu/analyze/prebuilt-invoice`
-- `POST /api/cu/analyze/prebuilt-purchase-order`
-
-These endpoints are intended for raw analyzer troubleshooting and field-shape inspection.
-
+### 2.3 Classification guardrails
+- Bill-of-lading signals take precedence over invoice fallback signals.
+- Amount-only fallback does not classify a document as invoice.
 
 ## 3. CU Execution and Outcome Semantics
 Service: CuExecutionService
