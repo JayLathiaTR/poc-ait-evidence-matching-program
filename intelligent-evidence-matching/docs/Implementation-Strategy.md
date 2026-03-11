@@ -38,7 +38,7 @@
 **Service name:** `CuOrchestrationService`
 
 **Responsibilities**
-1. Dispatch every group to first-pass analyzer target (`document-prebuilt`).
+1. Dispatch every group to logical first-pass target (`document-prebuilt`), resolved at execution time to configured analyzer ID.
 2. Keep dispatch policy centralized and explicit.
 3. Mark groups for downstream CU execution.
 
