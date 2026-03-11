@@ -14,11 +14,9 @@ This project is an isolated implementation track for CU-based evidence verificat
 ## Folder Structure
 - `backend/src/api`: API endpoints and request handlers
 - `backend/src/services/document-intake`: file intake and page-unit creation
-- `backend/src/services/pre-extraction`: PDF text extraction and OCR pre-pass
-- `backend/src/services/page-routing`: pass-1 routing scorecard
-- `backend/src/services/document-grouping`: pass-2 page stitching and grouping
-- `backend/src/services/cu-orchestration`: CU analyzer routing and execution
-- `backend/src/services/extraction-normalization`: normalize invoice/general outputs
+- `backend/src/services/document-grouping`: intake-file grouping and CU triage staging
+- `backend/src/services/cu-orchestration`: CU-first dispatch and analyzer execution
+- `backend/src/services/extraction-normalization`: normalize CU outputs into shared schema
 - `backend/src/services/document-linking`: invoice-shipping linking and scoring
 - `backend/src/services/verification-decision`: decision engine and result statuses
 - `backend/src/services/review-queue`: review workflow and audit state
@@ -30,8 +28,8 @@ This project is an isolated implementation track for CU-based evidence verificat
 - `docs`: architecture notes, ownership map, and rollout docs
 
 ## Delivery Phases (POC)
-1. Intake + PreExtraction + Pass-1 Routing
-2. Pass-2 Grouping + CU Orchestration
+1. Intake + File-Scoped Grouping
+2. CU Dispatch Planning
 3. Normalization + Linking
 4. Validation + Review Queue + UI progress
 
@@ -45,9 +43,24 @@ Backend runs at `http://localhost:4010`.
 ### Smoke Test Endpoints
 - Health:
 	- `GET http://localhost:4010/api/health`
-- Intake + pre-extraction + page routing:
+- Intake + grouping:
 	- `POST http://localhost:4010/api/phase1/intake-route`
 	- `multipart/form-data` field name: `files` (multi-file supported)
+- Intake + grouping + CU dispatch:
+	- `POST http://localhost:4010/api/phase2/intake-group-cu`
+- Intake + grouping + CU execution + normalization/linking:
+	- `POST http://localhost:4010/api/phase3/intake-normalize-link`
+- End-to-end verification and review queue:
+	- `POST http://localhost:4010/api/phase4/intake-verify`
+
+## CU-First Policy
+- Every document group is sent to `prebuilt-document` as first pass.
+- First pass output classifies group intent (`invoice`, `shipping`, `other`).
+- A second pass is applied only when first pass indicates a specialized path:
+  - `invoice` -> `prebuilt-invoice`
+  - `shipping` -> `prebuilt-purchaseOrder`
+- `other` stays on first-pass output.
+- `unknown` and low-confidence outcomes are resolved in verification/review flow, not by local extraction/routing heuristics.
 
 ## Development Rule
 - No commit/push unless explicit approval is given.

@@ -12,8 +12,8 @@
 
 **Responsibilities**
 1. Accept uploaded files.
-2. Store raw files.
-3. Split multi-page documents (for example PDFs/TIFFs) into page units and treat single-image files as one-page units.
+2. Split multi-page documents (for example PDFs/TIFFs) into page units and treat single-image files as one-page units.
+3. Preserve source-file mapping for CU-first grouping.
 4. Create a tracking ID per upload batch.
 
 **Output**
@@ -21,81 +21,63 @@
 
 ---
 
-### 2. Text Extraction Layer (Cost-Aware First Pass)
-**Service name:** `PreExtractionService`
-
-**Responsibilities**
-1. Try direct text extraction from supported digital documents.
-2. If image/scanned page, run Tesseract OCR.
-3. Return normalized page text and basic quality score.
-
-**Output**
-- Page text and OCR confidence/quality.
-
----
-
-### 3. Pass-1 Routing (Page-Level)
-**Service name:** `PageRoutingService`
-
-**Responsibilities**
-1. Apply rule-based scorecard on extracted text.
-2. Classify each page as `invoice`, `shipping`, `other`, or `unknown`.
-3. Save routing confidence.
-
-**Output**
-- Page class + confidence.
-
----
-
-### 4. Pass-2 Grouping (Document Stitching)
+### 2. Grouping Layer
 **Service name:** `DocumentGroupingService`
 
 **Responsibilities**
-1. Merge adjacent pages with the same class.
-2. Stitch non-adjacent continuation pages using anchors.
-3. Mark uncertain joins as provisional and send them to unknown triage.
+1. Create logical groups from intake pages by source file boundary.
+2. Initialize group triage state for CU execution.
+3. Keep grouping deterministic and independent from local extraction/routing heuristics.
 
 **Output**
-- Logical document groups (not just individual pages).
-- Group-level confidence and provisional triage flags (`ready-for-cu` / `unknown-triage`).
+- Group-level metadata and triage flag (`ready-for-cu`).
 
 ---
 
-### 5. CU Orchestration Layer
+### 3. CU Orchestration Layer
 **Service name:** `CuOrchestrationService`
 
 **Responsibilities**
-1. Route grouped docs to the correct CU analyzer.
-2. Handle retries/timeouts.
-3. Collect raw CU responses.
-4. Re-score unknown-triage groups and either auto-route or send to review queue.
-
-**Routing policy**
-- `invoice` -> prebuilt invoice analyzer.
-- `shipping/other` -> prebuilt general document analyzer.
-- `unknown` -> prebuilt general analyzer fallback, then re-classify:
-   - if confidence improves, auto-route to invoice/shipping/other path.
-   - if still low confidence, mark `review-needed` and send to manual review queue.
+1. Dispatch every group to first-pass `prebuilt-document`.
+2. Keep dispatch policy centralized and explicit.
+3. Mark groups for downstream CU execution.
 
 **Output**
-- Raw CU results per grouped document.
+- CU dispatch decisions.
 
 ---
 
-### 6. Normalization Layer
+### 4. CU Execution Layer
+**Service name:** `CuExecutionService` + executors
+
+**Responsibilities**
+1. Execute first-pass `prebuilt-document` analysis.
+2. Classify by CU-first-pass result into `invoice`, `shipping`, or `other`.
+3. Run second pass only when needed:
+   - `invoice` -> `prebuilt-invoice`
+   - `shipping` -> `prebuilt-purchaseOrder`
+4. Reuse first-pass output for `other`.
+5. Return technical and extraction statuses separately.
+
+**Output**
+- CU extraction payloads with `classifiedAs` and `analyzerIdUsed`.
+
+---
+
+### 5. Normalization Layer
 **Service name:** `ExtractionNormalizationService`
 
 **Responsibilities**
-1. Convert CU invoice fields to common schema.
-2. Parse CU general markdown/tables/lines into the same schema.
-3. Add field-level confidence and source traces.
+1. Convert CU-native fields into the normalized internal schema.
+2. Use CU-derived class (`classifiedAs`) for normalized `pageClass`.
+3. Preserve CU confidence while providing normalized fallback confidence.
 
 **Output**
 - Unified extraction model for all document types.
 
 ---
 
-### 7. Matching + Linking Layer
+### 6. Matching + Linking Layer
 **Service name:** `DocumentLinkingService`
 
 **Responsibilities**
@@ -108,7 +90,7 @@
 
 ---
 
-### 8. Validation + Decision Layer
+### 7. Validation + Decision Layer
 **Service name:** `VerificationDecisionService`
 
 **Responsibilities**
@@ -124,7 +106,7 @@
 
 ---
 
-### 9. Review + Audit Layer
+### 8. Review + Audit Layer
 **Service name:** `ReviewQueueService`
 
 **Responsibilities**
@@ -137,7 +119,7 @@
 
 ---
 
-### 10. API + UI Integration Layer
+### 9. API + UI Integration Layer
 **Service name:** `VerificationApiService`
 
 **Responsibilities**
@@ -151,8 +133,8 @@
 ---
 
 ## Suggested Delivery Phases
-1. **Phase 1:** Intake + PreExtraction + Pass-1 Routing.
-2. **Phase 2:** Pass-2 Grouping + CU Orchestration.
+1. **Phase 1:** Intake + Grouping.
+2. **Phase 2:** CU Dispatch.
 3. **Phase 3:** Normalization + Linking.
 4. **Phase 4:** Validation + Review Queue + UI progress.
 

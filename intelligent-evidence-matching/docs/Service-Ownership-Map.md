@@ -7,28 +7,25 @@ This map enforces clear service boundaries for parallel developer execution.
   - Input: uploaded files
   - Output: page units + batch metadata
 
-- `PreExtractionService`
-  - Input: page units
-  - Output: extracted text + extraction quality
-
-- `PageRoutingService`
-  - Input: extracted text
-  - Output: page class (`invoice`/`shipping`/`other`/`unknown`) + confidence
-
 - `DocumentGroupingService`
-  - Input: page classes + anchors
-  - Output: grouped logical docs + triage flags (`ready-for-cu`/`unknown-triage`)
+  - Input: intake page units
+  - Output: grouped logical docs + triage flag (`ready-for-cu`)
 
 - `CuOrchestrationService`
   - Input: grouped docs
-  - Output: raw CU responses
-  - Routing:
-    - invoice -> prebuilt invoice analyzer
-    - shipping/other -> prebuilt general analyzer
-    - unknown -> general fallback, then reclassify or mark `review-needed`
+  - Output: CU dispatch decisions (first-pass `prebuilt-document`)
+
+- `CuExecutionService`
+  - Input: grouped docs + dispatch decisions
+  - Output: CU execution results with `classifiedAs`, `analyzerIdUsed`, extraction payload, and status dimensions
+  - Execution policy:
+    - first pass: `prebuilt-document`
+    - second pass (conditional):
+      - invoice -> `prebuilt-invoice`
+      - shipping -> `prebuilt-purchaseOrder`
 
 - `ExtractionNormalizationService`
-  - Input: CU raw responses
+  - Input: grouped docs + CU results
   - Output: unified normalized extraction model
 
 - `DocumentLinkingService`
