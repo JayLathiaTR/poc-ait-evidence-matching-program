@@ -23,9 +23,10 @@ This map enforces clear service boundaries for parallel developer execution.
       - `CU_FIRST_PASS_ANALYZER_ID`
       - `CU_GENERAL_ANALYZER_ID`
       - default `prebuilt-documentFields`
+    - first-pass structured fields are primary for PO/BOL extraction; markdown/text parsing is fallback-only for sparse output
     - second pass (conditional):
       - invoice -> `prebuilt-invoice`
-      - shipping (purchase-order-like) -> `prebuilt-purchaseOrder`
+      - shipping (purchase-order-like, insufficient first-pass payload) -> `prebuilt-purchaseOrder`
       - shipping (bill-of-lading-like) -> remain on first-pass analyzer output
 
 - `ExtractionNormalizationService`

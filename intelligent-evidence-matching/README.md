@@ -56,12 +56,19 @@ Backend runs at `http://localhost:4010`.
 ## CU-First Policy
 - Every document group is sent to the configured first-pass analyzer as first pass.
 - First pass output classifies group intent (`invoice`, `shipping`, `other`).
-- A second pass is applied only when first pass indicates a specialized path:
+- Structured `prebuilt-documentFields` extraction is the primary source for PO/BOL fields.
+- Markdown/text parsing is fallback-only when structured fields are sparse.
+- A second pass is applied only when first pass indicates a specialized path and additional extraction is required:
   - `invoice` -> `prebuilt-invoice`
-	- `shipping` -> `prebuilt-purchaseOrder` only for purchase-order-like shipping docs
+	- `shipping` -> `prebuilt-purchaseOrder` only for purchase-order-like shipping docs that need PO-specialized extraction beyond first-pass payload
 	- `shipping` docs that are bill-of-lading-like remain on first-pass analyzer output
 - `other` stays on first-pass output.
 - `unknown` and low-confidence outcomes are resolved in verification/review flow, not by local extraction/routing heuristics.
+
+### PO/BOL Field Mapping (First-Pass Structured Fields)
+- PO and BOL payloads prioritize first-pass structured field objects/arrays (for example `ShipTo`/`Consignee`, `Carrier`, `OrderItems`) over markdown text.
+- `CustomerName` is derived from structured recipient name fields (for example `Consignee.Name` / `ShipTo.Name`) when present.
+- `ShippingAddress` is composed from structured address fields (for example `Consignee.Address + Consignee.CityStateZip`) when present.
 
 ### First-Pass Analyzer Configuration
 - First-pass analyzer resolution order:

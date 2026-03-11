@@ -56,12 +56,12 @@
    - fallback `CU_GENERAL_ANALYZER_ID`
    - default `prebuilt-documentFields`
 2. Classify by CU-first-pass result into `invoice`, `shipping`, or `other`.
-3. Run second pass only when needed:
+3. Treat first-pass structured fields as primary extraction source for PO/BOL paths; use markdown/text only as fallback when structured output is sparse.
+4. Run second pass only when needed:
    - `invoice` -> `prebuilt-invoice`
-   - `shipping` -> `prebuilt-purchaseOrder` only when shipping intent is purchase-order-like
+   - `shipping` -> `prebuilt-purchaseOrder` only when shipping intent is purchase-order-like and first-pass payload is insufficient for required PO fields
    - `shipping` that is bill-of-lading-like stays on first-pass analyzer output
-4. Reuse first-pass output for `other`.
-5. Apply markdown/text fallback extraction for sparse first-pass field output.
+5. Reuse first-pass output for `other`.
 6. Return technical and extraction statuses separately.
 
 **Output**

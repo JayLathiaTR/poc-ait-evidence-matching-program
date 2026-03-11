@@ -36,15 +36,22 @@ Service: CuOrchestrationService
   - `CU_FIRST_PASS_ANALYZER_ID`
   - `CU_GENERAL_ANALYZER_ID`
   - default `prebuilt-documentFields`
+- First-pass structured fields are primary extraction source for PO/BOL values.
+- Markdown/text extraction is fallback-only when first-pass structured output is sparse.
 - CU first-pass output classifies document intent:
   - `invoice`
   - `shipping`
   - `other`
 - Second pass executes only for specialized classes:
   - `invoice` -> `prebuilt-invoice`
-  - `shipping` -> `prebuilt-purchaseOrder` only for purchase-order-like shipping payloads
+  - `shipping` -> `prebuilt-purchaseOrder` only for purchase-order-like shipping payloads that need PO-specialized enrichment
   - bill-of-lading-like shipping payloads stay on first-pass analyzer output
 - `other` uses first-pass extraction without second pass.
+
+### 2.4 Structured field examples (shipping docs)
+- Recipient/name fields are read from structured objects first (for example `ShipTo.Name`, `Consignee.Name`).
+- Shipping address is composed from structured address parts when present (for example `Consignee.Address + Consignee.CityStateZip`).
+- PO-related references prefer structured fields/arrays (for example `PONumber`, `OrderItems[].CustomerOrderNo`) before text fallback.
 
 ### 2.3 Classification guardrails
 - Bill-of-lading signals take precedence over invoice fallback signals.
