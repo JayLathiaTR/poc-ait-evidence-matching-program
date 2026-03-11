@@ -28,7 +28,7 @@ Service: CuOrchestrationService
 ### 2.1 Dispatch policy
 - All groups are dispatched with:
   - `initialClass = unknown`
-  - `analyzerTarget = document-prebuilt` (logical dispatch target, not a fixed concrete analyzer ID)
+  - `analyzerTarget` set to first-pass dispatch path (resolved to configured analyzer during execution)
   - `dispatchStatus = queued`
 
 ### 2.2 First-pass and second-pass policy

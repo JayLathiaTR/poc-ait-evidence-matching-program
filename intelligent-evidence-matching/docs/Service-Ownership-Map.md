@@ -13,7 +13,7 @@ This map enforces clear service boundaries for parallel developer execution.
 
 - `CuOrchestrationService`
   - Input: grouped docs
-  - Output: CU dispatch decisions (logical first-pass `document-prebuilt` target; concrete analyzer resolved in execution)
+  - Output: CU dispatch decisions for first-pass analysis path; concrete analyzer resolved in execution
 
 - `CuExecutionService`
   - Input: grouped docs + dispatch decisions
