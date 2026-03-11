@@ -59,7 +59,7 @@ Backend runs at `http://localhost:4010`.
 - A second pass is applied only when first pass indicates a specialized path:
   - `invoice` -> `prebuilt-invoice`
 	- `shipping` -> `prebuilt-purchaseOrder` only for purchase-order-like shipping docs
-	- `shipping` docs that are bill-of-lading-like remain on `prebuilt-document`
+	- `shipping` docs that are bill-of-lading-like remain on first-pass analyzer output
 - `other` stays on first-pass output.
 - `unknown` and low-confidence outcomes are resolved in verification/review flow, not by local extraction/routing heuristics.
 

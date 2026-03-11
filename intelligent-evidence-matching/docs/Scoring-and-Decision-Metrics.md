@@ -43,7 +43,7 @@ Service: CuOrchestrationService
 - Second pass executes only for specialized classes:
   - `invoice` -> `prebuilt-invoice`
   - `shipping` -> `prebuilt-purchaseOrder` only for purchase-order-like shipping payloads
-  - bill-of-lading-like shipping payloads stay on `prebuilt-document`
+  - bill-of-lading-like shipping payloads stay on first-pass analyzer output
 - `other` uses first-pass extraction without second pass.
 
 ### 2.3 Classification guardrails

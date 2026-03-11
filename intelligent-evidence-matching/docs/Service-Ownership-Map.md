@@ -13,7 +13,7 @@ This map enforces clear service boundaries for parallel developer execution.
 
 - `CuOrchestrationService`
   - Input: grouped docs
-  - Output: CU dispatch decisions (first-pass `prebuilt-document`)
+  - Output: CU dispatch decisions (first-pass `document-prebuilt` target)
 
 - `CuExecutionService`
   - Input: grouped docs + dispatch decisions
@@ -26,7 +26,7 @@ This map enforces clear service boundaries for parallel developer execution.
     - second pass (conditional):
       - invoice -> `prebuilt-invoice`
       - shipping (purchase-order-like) -> `prebuilt-purchaseOrder`
-      - shipping (bill-of-lading-like) -> remain on `prebuilt-document`
+      - shipping (bill-of-lading-like) -> remain on first-pass analyzer output
 
 - `ExtractionNormalizationService`
   - Input: grouped docs + CU results
