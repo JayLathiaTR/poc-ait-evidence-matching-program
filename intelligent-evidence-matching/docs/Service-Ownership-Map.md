@@ -21,8 +21,7 @@ This map enforces clear service boundaries for parallel developer execution.
   - Execution policy:
     - first pass analyzer resolution order:
       - `CU_FIRST_PASS_ANALYZER_ID`
-      - `CU_GENERAL_ANALYZER_ID`
-      - default `prebuilt-documentFieldSchema`
+      - default `prebuilt-documentFields`
     - first-pass structured fields are primary for PO/BOL extraction; markdown/text parsing is fallback-only for sparse output
     - second pass (conditional):
       - invoice -> `prebuilt-invoice`

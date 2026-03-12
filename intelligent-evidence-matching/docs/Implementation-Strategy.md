@@ -53,8 +53,7 @@
 **Responsibilities**
 1. Execute first-pass analysis using configured analyzer priority:
    - `CU_FIRST_PASS_ANALYZER_ID`
-   - fallback `CU_GENERAL_ANALYZER_ID`
-   - default `prebuilt-documentFieldSchema`
+   - default `prebuilt-documentFields`
 2. Classify by CU-first-pass result into `invoice`, `shipping`, or `other`.
 3. Treat first-pass structured fields as primary extraction source for PO/BOL paths; use markdown/text only as fallback when structured output is sparse.
 4. Run second pass only when needed:

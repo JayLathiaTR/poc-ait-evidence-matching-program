@@ -56,7 +56,7 @@ Backend runs at `http://localhost:4010`.
 ## CU-First Policy
 - Every document group is sent to the configured first-pass analyzer as first pass.
 - First pass output classifies group intent (`invoice`, `shipping`, `other`).
-- Structured `prebuilt-documentFieldSchema` extraction is the primary source for PO/BOL fields.
+- Structured `prebuilt-documentFields` extraction is the primary source for PO/BOL fields.
 - Markdown/text parsing is fallback-only when structured fields are sparse.
 - A second pass is applied only when first pass indicates a specialized path and additional extraction is required:
   - `invoice` -> `prebuilt-invoice`
@@ -73,9 +73,8 @@ Backend runs at `http://localhost:4010`.
 ### First-Pass Analyzer Configuration
 - First-pass analyzer resolution order:
 	- `CU_FIRST_PASS_ANALYZER_ID`
-	- `CU_GENERAL_ANALYZER_ID`
-	- default: `prebuilt-documentFieldSchema`
-- Recommended value: `CU_FIRST_PASS_ANALYZER_ID=prebuilt-documentFieldSchema`
+	- default: `prebuilt-documentFields`
+- Recommended value: `CU_FIRST_PASS_ANALYZER_ID=prebuilt-documentFields`
 
 ## Development Rule
 - No commit/push unless explicit approval is given.

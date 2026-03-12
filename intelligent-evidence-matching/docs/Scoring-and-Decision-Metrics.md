@@ -34,8 +34,7 @@ Service: CuOrchestrationService
 ### 2.2 First-pass and second-pass policy
 - First pass runs analyzer using resolution order:
   - `CU_FIRST_PASS_ANALYZER_ID`
-  - `CU_GENERAL_ANALYZER_ID`
-  - default `prebuilt-documentFieldSchema`
+  - default `prebuilt-documentFields`
 - First-pass structured fields are primary extraction source for PO/BOL values.
 - Markdown/text extraction is fallback-only when first-pass structured output is sparse.
 - CU first-pass output classifies document intent:
